@@ -74,6 +74,7 @@ fi
 SKILL_DIR="$TESTS_DIR/$SKILL"
 DB_NAME=$(get_db_name "$SKILL")
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+export TEST_RUN_ID="$TIMESTAMP"
 
 # Validate skill directory exists
 if [[ ! -d "$SKILL_DIR" ]]; then

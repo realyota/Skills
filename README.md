@@ -4,6 +4,8 @@ This repository contains skills used for ClickHouse DB performance and schema an
 
 ## Core Skills
 - `altinity-expert-clickhouse/`: Modular ClickHouse diagnostic skill set. Each module is a standalone skill under `altinity-expert-clickhouse/skills/` (e.g., memory, merges, replication).
+- `automations/`: Batch and focus audit scripts that run full ClickHouse analysis and emit a single report.
+- `releases/`: Built zip packages for distribution (one per skill).
 
 ## Install / Use Skills
 

@@ -219,6 +219,35 @@ Use Codex to analyze query performance
 
 ---
 
+## Scenario Error Handling (.ignore-errors)
+
+The test runner defaults to fail-fast for scenario SQL. You can opt into error-tolerant
+scenario execution for a specific skill by creating a `.ignore-errors` file in that
+skill’s test directory (for example, `tests/altinity-expert-clickhouse-replication/.ignore-errors`).
+
+Behavior:
+- When `.ignore-errors` exists, `run-test.sh` executes scenario SQL via
+  `run_script_in_db_ignore_errors`, which uses `clickhouse-client --ignore-error`.
+- Without `.ignore-errors`, scenario SQL runs via `run_script_in_db`, and any
+  ClickHouse error stops the test (due to `set -euo pipefail`).
+- This only affects scenario SQL in `tests/<skill>/scenarios/*.sql`. It does not
+  change schema creation, report generation, or verification.
+
+Use `.ignore-errors` when:
+- Errors are expected and are the signal under test (e.g., readonly replicas,
+  Keeper issues, or intentionally failing queries).
+- You want the test to continue so the skill can diagnose the failure state.
+
+Do NOT use `.ignore-errors` when:
+- Scenario SQL is meant to succeed (errors indicate a broken test setup).
+- You need fail-fast to prevent misleading or incomplete reports.
+
+Tradeoffs:
+- Pros: simple opt-in per skill; preserves strict default; keeps tests running.
+- Cons: coarse-grained; can mask unexpected failures within the scenario.
+
+---
+
 ## Coordinator Tests (Adaptive Chaining)
 
 These are “behavior” tests for the coordinator (human or LLM) rather than the bash runner:

@@ -1,0 +1,7 @@
+# Reports
+reports/*
+!reports/.gitkeep
+
+# Temp files
+*.log
+*.tmp
