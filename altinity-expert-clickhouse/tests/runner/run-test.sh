@@ -205,24 +205,14 @@ if [[ -f "$SKILL_DIR/prompt.md" ]]; then
             ;;
         claude)
             CLAUDE_ARGS=(
-                -p
+                --print
                 --dangerously-skip-permissions
                 --allowedTools "Bash,Read,Glob,Grep"
-                --output-format json
             )
             if [[ -n "${CLAUDE_MODEL:-}" ]]; then
                 CLAUDE_ARGS+=(--model "$CLAUDE_MODEL")
             fi
-            # Run claude from the tests directory context
-            # JSON output goes to LLM_LOG, extract result field for REPORT
-            if (cd "$TESTS_DIR" && echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}" > "$LLM_LOG" 2>&1); then
-                # Extract result from JSON for the report
-                if command -v jq &> /dev/null; then
-                    jq -r '.result // empty' "$LLM_LOG" > "$REPORT"
-                else
-                    # Fallback: extract result with grep/sed if jq not available
-                    grep -o '"result":"[^"]*"' "$LLM_LOG" | sed 's/"result":"//;s/"$//' > "$REPORT"
-                fi
+            if echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}" > "$REPORT" 2> "$LLM_LOG"; then
                 if [[ -s "$REPORT" ]]; then
                     log_success "Report generated: $REPORT"
                 else

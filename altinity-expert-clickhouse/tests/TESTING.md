@@ -61,7 +61,7 @@ export CH_ANALYST_KEEP_ARTIFACTS=1
 export CH_ANALYST_QUERY_TIMEOUT_SEC=60   # set to 0 to disable
 
 scripts/run-agent.sh reporting "smoke test"
-# Inspect runs/<timestamp>-reporting/ for prompt, raw output, final JSON, and query results/errors.
+# Inspect runs/<timestamp>-reporting/ for prompt, raw output, final JSON, and query results.
 ```
 
 ---
@@ -273,10 +273,10 @@ scripts/run-agent.sh reporting "general slowness" > /tmp/reporting.json
 | Slow queries | reporting, memory | merges if many parts; schema if bad design; caches if cache symptoms |
 | Slow inserts | ingestion, merges, storage | schema if tiny parts; logs if system logs are choking disk |
 | Too many parts | merges, ingestion, storage | schema for partitioning review |
-| Replication lag | replication, merges, storage | errors/text_log if failures found |
+| Replication lag | replication, merges, storage | logs if failures found |
 | Disk full | storage, ingestion | logs if system tables large |
-| Mutations stuck | mutations, merges, storage | errors/text_log if failing |
-| Dictionary issues | dictionaries, errors | memory if dictionary bytes high |
+| Mutations stuck | mutations, merges, storage | logs if failing |
+| Dictionary issues | dictionaries, logs | memory if dictionary bytes high |
 | Health check | overview, metrics | varies based on findings |
 
 ---

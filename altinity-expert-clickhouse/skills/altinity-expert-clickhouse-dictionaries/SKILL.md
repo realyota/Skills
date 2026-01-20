@@ -343,8 +343,8 @@ limit 100
 | Finding | Load Module | Reason |
 |---------|-------------|--------|
 | High memory usage | `altinity-expert-clickhouse-memory` | Overall memory analysis |
-| Load failures | `altinity-expert-clickhouse-errors` | Error investigation |
-| Source connectivity | `altinity-expert-clickhouse-text-log` | Deep log analysis |
+| Load failures | `altinity-expert-clickhouse-overview` | Error summary + routing |
+| Source connectivity | `altinity-expert-clickhouse-logs` | Log investigation |
 | Slow lookups | `altinity-expert-clickhouse-reporting` | Query optimization |
 
 ---

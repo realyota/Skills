@@ -10,7 +10,7 @@ Rules:
 - Use helper functions from `altinity-expert-clickhouse/tests/runner/lib/common.sh` (run_query).
 - If AUDIT_REDACT=1, do not include hostnames, IPs, database/table names, user names, query texts, or filesystem paths. Use generic labels (e.g., db_1, table_1).
 
-Run all modules (skip the coordinator skill):
+Run all modules (do not use the audit skill itself):
 1) altinity-expert-clickhouse-overview
 2) altinity-expert-clickhouse-schema
 3) altinity-expert-clickhouse-merges
@@ -21,10 +21,8 @@ Run all modules (skip the coordinator skill):
 8) altinity-expert-clickhouse-ingestion
 9) altinity-expert-clickhouse-caches
 10) altinity-expert-clickhouse-dictionaries
-11) altinity-expert-clickhouse-errors
-12) altinity-expert-clickhouse-logs
-13) altinity-expert-clickhouse-metrics
-14) altinity-expert-clickhouse-text-log
+11) altinity-expert-clickhouse-logs
+12) altinity-expert-clickhouse-metrics
 
 For each module, follow its SKILL.md and include a dedicated section in the final report.
 

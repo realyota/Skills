@@ -4,8 +4,8 @@
 .PHONY: all test test-all test-all-codex test-all-claude test-all-gemini \
 	test-memory test-memory-codex test-memory-claude test-memory-gemini \
 	test-overview test-reporting test-ingestion test-merges test-mutations \
-	test-storage test-caches test-dictionaries test-errors test-logs \
-	test-metrics test-replication test-schema test-text-log test-expert \
+	test-storage test-caches test-dictionaries test-logs \
+	test-metrics test-replication test-schema test-audit \
 	validate setup clean help expert expert-dry
 
 RUNNER := ./runner/run-test.sh
@@ -24,8 +24,8 @@ validate:
 test: test-all
 
 test-all: validate test-memory test-overview test-reporting test-ingestion test-merges test-mutations \
-	test-storage test-caches test-dictionaries test-errors test-logs test-metrics test-replication \
-	test-schema test-text-log test-expert
+	test-storage test-caches test-dictionaries test-logs test-metrics test-replication \
+	test-schema test-audit
 
 # Run all skill tests with explicit LLM provider
 test-all-codex:
@@ -77,9 +77,6 @@ test-caches: validate
 test-dictionaries: validate
 	LLM_PROVIDER=$(LLM_PROVIDER) CODEX_MODEL=$(CODEX_MODEL) CODEX_VERIFY_MODEL=$(CODEX_VERIFY_MODEL) $(RUNNER) altinity-expert-clickhouse-dictionaries
 
-test-errors: validate
-	LLM_PROVIDER=$(LLM_PROVIDER) CODEX_MODEL=$(CODEX_MODEL) CODEX_VERIFY_MODEL=$(CODEX_VERIFY_MODEL) $(RUNNER) altinity-expert-clickhouse-errors
-
 test-logs: validate
 	LLM_PROVIDER=$(LLM_PROVIDER) CODEX_MODEL=$(CODEX_MODEL) CODEX_VERIFY_MODEL=$(CODEX_VERIFY_MODEL) $(RUNNER) altinity-expert-clickhouse-logs
 
@@ -92,11 +89,8 @@ test-replication: validate
 test-schema: validate
 	LLM_PROVIDER=$(LLM_PROVIDER) CODEX_MODEL=$(CODEX_MODEL) CODEX_VERIFY_MODEL=$(CODEX_VERIFY_MODEL) $(RUNNER) altinity-expert-clickhouse-schema
 
-test-text-log: validate
-	LLM_PROVIDER=$(LLM_PROVIDER) CODEX_MODEL=$(CODEX_MODEL) CODEX_VERIFY_MODEL=$(CODEX_VERIFY_MODEL) $(RUNNER) altinity-expert-clickhouse-text-log
-
-test-expert: validate
-	LLM_PROVIDER=$(LLM_PROVIDER) CODEX_MODEL=$(CODEX_MODEL) CODEX_VERIFY_MODEL=$(CODEX_VERIFY_MODEL) $(RUNNER) altinity-expert-clickhouse-expert
+test-audit: validate
+	LLM_PROVIDER=$(LLM_PROVIDER) CODEX_MODEL=$(CODEX_MODEL) CODEX_VERIFY_MODEL=$(CODEX_VERIFY_MODEL) $(RUNNER) altinity-expert-clickhouse-audit
 
 # Run memory skill test without verification
 test-memory-no-verify: validate
@@ -148,13 +142,11 @@ help:
 	@echo "  make test-storage      Run storage skill test"
 	@echo "  make test-caches       Run caches skill test"
 	@echo "  make test-dictionaries Run dictionaries skill test"
-	@echo "  make test-errors       Run errors skill test"
 	@echo "  make test-logs         Run logs skill test"
 	@echo "  make test-metrics      Run metrics skill test"
 	@echo "  make test-replication  Run replication skill test"
 	@echo "  make test-schema       Run schema skill test"
-	@echo "  make test-text-log     Run text-log skill test"
-	@echo "  make test-expert       Run coordinator skill test"
+	@echo "  make test-audit        Run full audit skill test"
 	@echo "  make test-memory-codex Run memory skill test with Codex"
 	@echo "  make test-memory-claude Run memory skill test with Claude"
 	@echo "  make test-memory-gemini Run memory skill test with Gemini (stub)"

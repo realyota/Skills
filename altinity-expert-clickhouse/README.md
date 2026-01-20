@@ -4,7 +4,7 @@ This package contains the modular `altinity-expert-clickhouse-*` ClickHouse diag
 
 ## Layout
 
-- `skills/` — all `altinity-expert-clickhouse-*` skill definitions (each has its own `SKILL.md`).
+- `skills/` — all `altinity-expert-clickhouse-*` skill definitions (each has its own `SKILL.md`). The `...-overview` skill is the router; `...-audit` runs all modules sequentially.
 - `tests/` — test suite and scenarios. Do not modify structure without updating prompts/runner.
 - `../releases/` — built zip packages for distribution.
 

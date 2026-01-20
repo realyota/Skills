@@ -333,7 +333,7 @@ where event_date >= today() - 1
 |---------|-------------|--------|
 | Merge tasks stuck | `altinity-expert-clickhouse-merges` | Merge backlog analysis |
 | Fetch slow + disk issues | `altinity-expert-clickhouse-storage` | Disk bottleneck |
-| Keeper connection issues | `altinity-expert-clickhouse-text-log` | Deep log analysis |
+| Keeper connection issues | `altinity-expert-clickhouse-logs` | Log investigation |
 | Many parts to fetch | `altinity-expert-clickhouse-ingestion` | Insert pattern analysis |
 
 ---

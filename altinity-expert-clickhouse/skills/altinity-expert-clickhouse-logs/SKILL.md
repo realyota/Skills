@@ -315,7 +315,7 @@ where event_date >= today() - 7
 | Finding | Load Module | Reason |
 |---------|-------------|--------|
 | Logs filling disk | `altinity-expert-clickhouse-storage` | Disk space analysis |
-| query_log missing data | `altinity-expert-clickhouse-errors` | Check for errors |
+| query_log missing data | `altinity-expert-clickhouse-overview` | Error summary + routing |
 | High log volume | `altinity-expert-clickhouse-ingestion` | Batch sizing (affects part_log) |
 | No query_log entries | `altinity-expert-clickhouse-overview` | System configuration |
 

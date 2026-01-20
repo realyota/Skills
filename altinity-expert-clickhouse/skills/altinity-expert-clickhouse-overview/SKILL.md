@@ -1,11 +1,32 @@
 ---
 name: altinity-expert-clickhouse-overview
-description: System health entry point for ClickHouse diagnostics. Use for general health checks, audits, status reviews, and quick assessment of server resource utilization and object counts.
+description: Router skill for ClickHouse diagnostics. Runs a quick overview and chains to other skills based on findings.
 ---
 
-# System Health and Comprehensive Audit
+# System Health and Routing Overview
 
-System-wide health check and entry point for ClickHouse diagnostics. Run this first for general health assessment.
+Quick health check and routing entry point for ClickHouse diagnostics. Run this first, then chain to other skills based on findings.
+
+## Timeframe Handling
+
+Use the timeframe specified by the user. If none is provided, default to the last 24 hours.
+Use it consistently for `system.errors` and for scanning all `system.*_log` tables.
+
+## Routing Rules (Chain to Other Skills)
+
+- High memory usage or OOMs → `altinity-expert-clickhouse-memory`
+- Disk usage > 80% or poor compression → `altinity-expert-clickhouse-storage`
+- Many parts, merge backlog, or TOO_MANY_PARTS → `altinity-expert-clickhouse-merges`
+- Replication lag/readonly replicas/Keeper issues → `altinity-expert-clickhouse-replication`
+- Slow SELECTs / heavy reads in query_log → `altinity-expert-clickhouse-reporting`
+- Slow INSERTs / high part creation rate → `altinity-expert-clickhouse-ingestion`
+- Low cache hit ratios / cache pressure → `altinity-expert-clickhouse-caches`
+- Dictionary load failures or high dictionary memory → `altinity-expert-clickhouse-dictionaries`
+- Frequent exceptions or error spikes → include `system.errors` and `system.*_log` summaries below
+- System log TTL issues or log growth → `altinity-expert-clickhouse-logs`
+- Schema anti‑patterns (partitioning/ORDER BY/MV issues) → `altinity-expert-clickhouse-schema`
+- High load/connection saturation/queue buildup → `altinity-expert-clickhouse-metrics`
+- Suspicious server log entries → `altinity-expert-clickhouse-logs`
 
 ---
 
@@ -216,7 +237,7 @@ order by sum(bytes_on_disk) desc
 
 ---
 
-## Recent Errors Summary
+## Recent Errors Summary (Timeframe-Based)
 
 ```sql
 select
@@ -225,11 +246,70 @@ select
     count() as total_queries,
     round(100.0 * countIf(type like 'Exception%') / count(), 2) as error_rate_pct
 from system.query_log
-where event_date = today()
+where event_time >= now() - interval 24 hour
 group by hour
 order by hour desc
 limit 12
 ```
+
+---
+
+## system.errors Summary (Timeframe-Based)
+
+```sql
+select
+    code,
+    name,
+    count,
+    last_error_time,
+    substring(last_error_message, 1, 160) as last_error_message
+from system.errors
+where last_error_time >= now() - interval 24 hour
+order by last_error_time desc
+limit 20
+```
+
+---
+
+## system.*_log Activity Summary (Timeframe-Based)
+
+1) Identify which log tables have timestamp columns:
+
+```sql
+select
+    table,
+    groupArray(name) as time_cols
+from system.columns
+where database = 'system'
+  and table like '%_log'
+  and name in ('event_time', 'event_date')
+group by table
+order by table
+```
+
+2) For each log table, run a short activity summary using the appropriate column:
+
+```sql
+-- Example: event_time-based tables
+select
+    count() as rows_24h,
+    min(event_time) as min_time,
+    max(event_time) as max_time
+from system.query_log
+where event_time >= now() - interval 24 hour
+```
+
+```sql
+-- Example: event_date-based tables
+select
+    count() as rows_24h,
+    min(event_date) as min_date,
+    max(event_date) as max_date
+from system.part_log
+where event_date >= today() - 1
+```
+
+Use the user-specified timeframe if provided; otherwise use the last 24 hours.
 
 ---
 
@@ -252,7 +332,7 @@ Based on findings, load specific modules:
 | Disk > 80% | `altinity-expert-clickhouse-storage` |
 | Many parts | `altinity-expert-clickhouse-merges` |
 | Replica delay | `altinity-expert-clickhouse-replication` |
-| High error rate | `altinity-expert-clickhouse-errors` |
+| High error rate | Include `system.errors` + log table summaries (see below) |
 | Pool saturation | `altinity-expert-clickhouse-ingestion` or `altinity-expert-clickhouse-merges` |
 | Old version | Check ClickHouse release notes |
 | Log issues | `altinity-expert-clickhouse-logs` |
