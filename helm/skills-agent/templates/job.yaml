@@ -25,6 +25,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      serviceAccountName: {{ include "skills-agent.serviceAccountName" . }}
       restartPolicy: {{ .Values.job.restartPolicy }}
       containers:
         - name: agent
@@ -35,6 +36,20 @@ spec:
           env:
             - name: HOME
               value: /home/bun
+            {{- if and .Values.storeResults.enabled (not .Values.storeResults.iamRoleArn) }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "skills-agent.fullname" . }}-aws-credentials
+                  key: aws-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "skills-agent.fullname" . }}-aws-credentials
+                  key: aws-secret-access-key
+            - name: AWS_DEFAULT_REGION
+              value: {{ .Values.storeResults.awsRegion | quote }}
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -46,6 +61,8 @@ spec:
               readOnly: true
             - name: workspace
               mountPath: /workspace
+            - name: agent-logs
+              mountPath: /tmp/agent-logs
             - name: clickhouse-client-config
               mountPath: /etc/clickhouse-client/config.xml
               subPath: clickhouse-client-config.xml
@@ -90,6 +107,8 @@ spec:
             secretName: {{ include "skills-agent.secretName" . }}
             defaultMode: 0400
         - name: workspace
+          emptyDir: {}
+        - name: agent-logs
           emptyDir: {}
         - name: clickhouse-client-config
           secret:

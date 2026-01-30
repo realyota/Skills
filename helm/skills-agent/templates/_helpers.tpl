@@ -60,6 +60,17 @@ Secret name
 {{- end }}
 
 {{/*
+Create the name of the service account to use
+*/}}
+{{- define "skills-agent.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "skills-agent.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
 Build the command based on agent type
 */}}
 {{- define "skills-agent.command" -}}
@@ -67,19 +78,77 @@ Build the command based on agent type
 - /bin/sh
 - -c
 - |
+  set -e
+  WORK_DIR="/tmp/agent-logs"
+  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+  LOG_DIR="${WORK_DIR}/${TIMESTAMP}"
+  
+  echo "Creating log directory: ${LOG_DIR}"
+  mkdir -p "${LOG_DIR}"
+  
   mkdir -p /home/bun/.claude
   cp /secrets/claude-credentials.json /home/bun/.claude/.credentials.json
   chmod 600 /home/bun/.claude/.credentials.json
   cd /workspace
-  claude --dangerously-skip-permissions -p "/{{ .Values.skillName }} {{ .Values.prompt }}"
+  
+  echo "Starting agent execution..."
+  claude --dangerously-skip-permissions -p "/{{ .Values.skillName }} {{ .Values.prompt }}" 2>&1 | tee "${LOG_DIR}/agent-execution.log"
+  echo "Agent execution completed"
+  
+  {{- if .Values.storeResults.enabled }}
+  echo "Uploading results to S3..."
+  S3_BUCKET="{{ .Values.storeResults.s3Bucket }}"
+  S3_PREFIX="{{ .Values.storeResults.s3Prefix }}"
+  S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/${TIMESTAMP}/"
+  
+  {{- if not .Values.storeResults.iamRoleArn }}
+  export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+  export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+  export AWS_DEFAULT_REGION="{{ .Values.storeResults.awsRegion }}"
+  {{- end }}
+  
+  aws s3 cp "${LOG_DIR}/" "${S3_PATH}" --recursive
+  echo "Results uploaded to: ${S3_PATH}"
+  {{- else }}
+  echo "S3 storage is disabled, logs remain in ${LOG_DIR}"
+  {{- end }}
 {{- else if eq .Values.agent "codex" }}
 - /bin/sh
 - -c
 - |
+  set -e
+  WORK_DIR="/tmp/agent-logs"
+  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+  LOG_DIR="${WORK_DIR}/${TIMESTAMP}"
+  
+  echo "Creating log directory: ${LOG_DIR}"
+  mkdir -p "${LOG_DIR}"
+  
   mkdir -p /home/bun/.codex
   cp /secrets/codex-auth.json /home/bun/.codex/auth.json
   chmod 600 /home/bun/.codex/auth.json
   cd /workspace
-  codex --dangerously-skip-permissions "${{ .Values.skillName }} {{ .Values.prompt }}"
+  
+  echo "Starting agent execution..."
+  codex --dangerously-skip-permissions "${{ .Values.skillName }} {{ .Values.prompt }}" 2>&1 | tee "${LOG_DIR}/agent-execution.log"
+  echo "Agent execution completed"
+  
+  {{- if .Values.storeResults.enabled }}
+  echo "Uploading results to S3..."
+  S3_BUCKET="{{ .Values.storeResults.s3Bucket }}"
+  S3_PREFIX="{{ .Values.storeResults.s3Prefix }}"
+  S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/${TIMESTAMP}/"
+  
+  {{- if not .Values.storeResults.iamRoleArn }}
+  export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+  export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+  export AWS_DEFAULT_REGION="{{ .Values.storeResults.awsRegion }}"
+  {{- end }}
+  
+  aws s3 cp "${LOG_DIR}/" "${S3_PATH}" --recursive
+  echo "Results uploaded to: ${S3_PATH}"
+  {{- else }}
+  echo "S3 storage is disabled, logs remain in ${LOG_DIR}"
+  {{- end }}
 {{- end }}
 {{- end }}

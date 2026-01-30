@@ -95,6 +95,25 @@ credentials:
 
 # Service account
 serviceAccount:
-  create: false
+  create: true
   name: ""
   annotations: {}
+
+# S3 storage configuration for agent execution results
+storeResults:
+  enabled: false
+  # S3 bucket name where results will be stored
+  s3Bucket: ""
+  # S3 path prefix (optional)
+  s3Prefix: "agent-results"
+  
+  # AWS credentials configuration
+  # Option 1: Use IAM Role for Service Account (IRSA) - recommended for EKS
+  # Provide the ARN of the IAM role
+  iamRoleArn: ""
+  
+  # Option 2: Use AWS credentials directly (not recommended for production)
+  # If iamRoleArn is not set, these credentials will be used
+  awsAccessKeyId: ""
+  awsSecretAccessKey: ""
+  awsRegion: "us-east-1"
