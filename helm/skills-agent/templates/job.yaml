@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "skills-agent.fullname" . }}-{{ now | date "20060102-150405" }}
+  labels:
+    {{- include "skills-agent.labels" . | nindent 4 }}
+    skills-agent/skill: {{ .Values.skillName | quote }}
+    skills-agent/agent: {{ .Values.agent | quote }}
+spec:
+  {{- if .Values.job.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished }}
+  {{- end }}
+  {{- if .Values.job.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds }}
+  {{- end }}
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "skills-agent.selectorLabels" . | nindent 8 }}
+        skills-agent/skill: {{ .Values.skillName | quote }}
+        skills-agent/agent: {{ .Values.agent | quote }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: {{ .Values.job.restartPolicy }}
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            {{- include "skills-agent.command" . | nindent 12 }}
+          env:
+            - name: HOME
+              value: /home/bun
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: credentials
+              mountPath: /secrets
+              readOnly: true
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: credentials
+          secret:
+            secretName: {{ include "skills-agent.secretName" . }}
+            defaultMode: 0400
+        - name: workspace
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
