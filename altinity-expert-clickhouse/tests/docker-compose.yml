@@ -1,0 +1,21 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-25.8}
+    environment:
+      # Make the `default` user available over the network (insecure; test-only).
+      - CLICKHOUSE_SKIP_USER_SETUP=1
+    ports:
+      - "9000:9000"   # native
+      - "8123:8123"   # http
+    volumes:
+      - ./clickhouse-server/config.d:/etc/clickhouse-server/config.d:ro
+      - ./clickhouse-server/users.d:/etc/clickhouse-server/users.d:ro
+      - clickhouse-data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+volumes:
+  clickhouse-data: {}
+

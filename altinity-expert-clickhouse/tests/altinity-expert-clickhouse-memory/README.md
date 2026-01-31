@@ -69,24 +69,23 @@ See `expected.md` for detailed pass/fail criteria.
 
 - `dbschema.sql` - Base schema and table definitions
 - `scenarios/` - SQL files that create problem conditions
-- `prompt.md` - Prompt sent to Claude for analysis
+- `prompt.md` - Prompt sent to the LLM for analysis
 - `expected.md` - Expected findings for verification
 - `post.sql` - Post-run reset steps (re-enable merges)
-- `config.d/memory-test.xml` - Optional server config snippet for deterministic logs/caches
 - `reports/` - Generated reports (gitignored) live under `tests/reports/altinity-expert-clickhouse-memory/`
 
 ## Optional Server Tuning
 
-For more deterministic query_log capture, you can install the config snippet:
+For more deterministic query_log capture, you can install the ClickHouse server config snippet:
 
 ```
-sudo cp tests/altinity-expert-clickhouse-memory/config.d/memory-test.xml /etc/clickhouse-server/config.d/
+sudo cp tests/clickhouse-server/config.d/memory-test.xml /etc/clickhouse-server/config.d/
 sudo systemctl restart clickhouse-server
 ```
 
 If you see authentication errors when loading dictionaries, install the user snippet:
 
 ```
-sudo cp tests/altinity-expert-clickhouse-memory/users.d/default-no-password.xml /etc/clickhouse-server/users.d/
+sudo cp tests/clickhouse-server/users.d/default-no-password.xml /etc/clickhouse-server/users.d/
 sudo systemctl restart clickhouse-server
 ```

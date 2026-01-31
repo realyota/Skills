@@ -4,12 +4,40 @@ This package contains the modular `altinity-expert-clickhouse-*` ClickHouse diag
 
 ## Layout
 
-- `skills/` — all `altinity-expert-clickhouse-*` skill definitions (each has its own `SKILL.md`). The `...-overview` skill is the router; `...-audit` runs all modules sequentially.
+- `skills/` — all `altinity-expert-clickhouse-*` skill definitions (each has its own `SKILL.md`). The `...-overview` skill is the router and suggests which specialist skill(s) to run next.
 - `tests/` — test suite and scenarios. Do not modify structure without updating prompts/runner.
 - `../releases/` — built zip packages for distribution.
 
 ## Manual Test prompts
-- run a quick overview of clickhouse server
+- Run a quick overview of ClickHouse server health
+- Based on findings, run one specialist skill (e.g. memory, merges, replication)
+- Full server analysis (runs all skills; can take a long time):
+
+```
+Run a comprehensive ClickHouse server analysis and write a single Markdown report to `report.md`.
+
+Workflow:
+1) Run `altinity-expert-clickhouse-overview` first and capture the key facts (hostName/version, uptime, disk/memory summary, system.errors, system.*_log activity, system.warnings, log TTL status).
+2) Then run ALL specialist skills one-by-one and merge findings into the same `report.md`:
+   - altinity-expert-clickhouse-metrics
+   - altinity-expert-clickhouse-logs
+   - altinity-expert-clickhouse-memory
+   - altinity-expert-clickhouse-storage
+   - altinity-expert-clickhouse-caches
+   - altinity-expert-clickhouse-merges
+   - altinity-expert-clickhouse-ingestion
+   - altinity-expert-clickhouse-reporting
+   - altinity-expert-clickhouse-replication
+   - altinity-expert-clickhouse-mutations
+   - altinity-expert-clickhouse-dictionaries
+   - altinity-expert-clickhouse-schema
+
+Report requirements:
+- Use headings per module, and end with a single prioritized action plan (Top 10), each with severity and “why”.
+- Include the most important supporting queries (and their results) inline or in appendices.
+- If any diagnostic query fails, record it in an “Appendix: Failed Queries” section with the error and the module name.
+- Make sure the report clearly states the timeframe used for logs (last 24h unless otherwise specified).
+```
 
 
 ## Run Tests
@@ -17,21 +45,41 @@ This package contains the modular `altinity-expert-clickhouse-*` ClickHouse diag
 From `altinity-expert-clickhouse/tests`:
 
 ```sh
-export CLICKHOUSE_HOST=localhost
-export CLICKHOUSE_PORT=9000
-export CLICKHOUSE_USER=altinity-expert
-export CLICKHOUSE_PASSWORD=...     # if set
-export CLICKHOUSE_SECURE=0         # or 1 if native TLS
+make help
 
+# Default: starts a local ClickHouse in Docker (CLICKHOUSE_VERSION=25.8)
+make validate
+
+# Run a single skill test
+make test-overview
+
+# Or run everything
 make test-all
-# or per-skill
-make test-memory
 ```
 
 Notes:
 - The test runner uses `tests/runner/lib/common.sh` helpers and `CLICKHOUSE_*` env vars for connectivity.
 - Provider-specific targets exist in `tests/Makefile` (Codex is the default; Claude is supported; Gemini is a stub).
 - Reports are written under `tests/reports/<skill-name>/`.
+- For more details (Docker, version switching, SQL-only runs), see `tests/TESTING.md`.
+
+### Running against an external ClickHouse (no Docker)
+
+The test suite still supports pointing at any reachable ClickHouse server:
+
+```sh
+export CLICKHOUSE_HOST=<host>
+export CLICKHOUSE_PORT=9000
+export CLICKHOUSE_USER=default
+export CLICKHOUSE_PASSWORD=...     # if set
+export CLICKHOUSE_SECURE=0         # or 1 if native TLS
+
+# Disable docker-managed ClickHouse
+make validate USE_DOCKER=0
+
+# Example: run a single test
+make test-overview USE_DOCKER=0
+```
 
 ## Build Release Zips
 

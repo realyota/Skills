@@ -3,6 +3,10 @@
 
 set -euo pipefail
 
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUNNER_DIR="$(dirname "$LIB_DIR")"
+TESTS_DIR="$(dirname "$RUNNER_DIR")"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -27,6 +31,39 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+compose_client_available() {
+    [[ -f "$TESTS_DIR/docker-compose.yml" ]] || return 1
+    command -v docker >/dev/null 2>&1 || return 1
+    docker compose version >/dev/null 2>&1 || return 1
+    return 0
+}
+
+build_client_cmd() {
+    # Prefer dockerized clickhouse-client when the test suite is configured to use Docker,
+    # even if a host clickhouse-client exists (host client version skew can cause
+    # connection resets against newer servers).
+    case "${USE_DOCKER:-0}" in
+        1|true|yes|on)
+            if compose_client_available; then
+                CLIENT_CMD=(docker compose -f "$TESTS_DIR/docker-compose.yml" exec -T clickhouse clickhouse-client)
+                return 0
+            fi
+            ;;
+    esac
+
+    if command -v clickhouse-client >/dev/null 2>&1; then
+        CLIENT_CMD=(clickhouse-client)
+        return 0
+    fi
+
+    if compose_client_available; then
+        CLIENT_CMD=(docker compose -f "$TESTS_DIR/docker-compose.yml" exec -T clickhouse clickhouse-client)
+        return 0
+    fi
+
+    return 1
+}
+
 # Build clickhouse-client arguments from environment variables
 build_client_args() {
     CLIENT_ARGS=(
@@ -49,35 +86,50 @@ build_client_args() {
 # Run a single query
 run_query() {
     local query="$1"
+    build_client_cmd
     build_client_args
-    clickhouse-client "${CLIENT_ARGS[@]}" --query "$query"
+    "${CLIENT_CMD[@]}" "${CLIENT_ARGS[@]}" --query "$query"
 }
 
 # Run a SQL script file
 run_script() {
     local script="$1"
+    build_client_cmd
     build_client_args
-    clickhouse-client "${CLIENT_ARGS[@]}" --multiquery < "$script"
+    "${CLIENT_CMD[@]}" "${CLIENT_ARGS[@]}" --multiquery < "$script"
 }
 
 # Run a SQL script with database context
 run_script_in_db() {
     local script="$1"
     local db="$2"
+    build_client_cmd
     build_client_args
-    clickhouse-client "${CLIENT_ARGS[@]}" --database "$db" --multiquery < "$script"
+    "${CLIENT_CMD[@]}" "${CLIENT_ARGS[@]}" --database "$db" --multiquery < "$script"
 }
 
 # Run a SQL script with database context, but continue on errors
 run_script_in_db_ignore_errors() {
     local script="$1"
     local db="$2"
+    build_client_cmd
     build_client_args
-    clickhouse-client "${CLIENT_ARGS[@]}" --database "$db" --multiquery --ignore-error < "$script"
+    "${CLIENT_CMD[@]}" "${CLIENT_ARGS[@]}" --database "$db" --multiquery --ignore-error < "$script"
 }
 
 # Validate environment variables are set
 validate_env() {
+    if ! build_client_cmd; then
+        log_error "No ClickHouse client available"
+        log_error "Install clickhouse-client or run from tests/ with docker compose available (uses `docker compose exec` fallback)."
+        return 1
+    fi
+
+    if [[ -z "${CLICKHOUSE_HOST:-}" ]]; then
+        log_warn "CLICKHOUSE_HOST is not set; defaulting to '${CLICKHOUSE_HOST:-arm}'"
+        log_warn "If this is not your ClickHouse, export CLICKHOUSE_HOST=<host> (and optionally CLICKHOUSE_PORT/USER/PASSWORD/SECURE)."
+    fi
+
     if [[ -z "${CLICKHOUSE_USER:-}" ]]; then
         log_warn "CLICKHOUSE_USER is not set, using 'default'"
     fi

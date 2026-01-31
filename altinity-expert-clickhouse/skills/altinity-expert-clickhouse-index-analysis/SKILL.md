@@ -3,11 +3,6 @@ name: altinity-expert-clickhouse-index-analysis
 description: Analyze whether ClickHouse indexes (PRIMARY KEY, ORDER BY, skipping indexes, projections) are being used effectively for actual query patterns. Use when investigating index effectiveness, ORDER BY key design, query-to-index alignment, or when queries scan more data than expected.
 ---
 
-# Index Effectiveness Analysis
-
-Analyze whether indexes match actual query patterns by examining query_log data, column cardinalities, and index usage.
-
----
 
 ## Diagnostics
 
@@ -188,35 +183,3 @@ Given cardinalities:
 - Column values randomly distributed (no correlation with ORDER BY)
 - Very high cardinality with set/bloom_filter
 
-### Index Type Selection
-
-| Index Type | Best For | Avoid When |
-|------------|----------|------------|
-| `bloom_filter` | Equality checks, IN lists | Range queries |
-| `set(N)` | Low-cardinality columns | Cardinality > N |
-| `minmax` | Range queries on sorted data | Random distribution |
-| `ngrambf_v1` | Substring search (LIKE '%x%') | Exact matches only |
-
----
-
-## Cross-Module Triggers
-
-| Finding | Load Module | Reason |
-|---------|-------------|--------|
-| Queries scan too many granules | `altinity-expert-clickhouse-schema` | ORDER BY redesign |
-| Projection might help | `altinity-expert-clickhouse-schema` | Add projection |
-| Memory pressure from scans | `altinity-expert-clickhouse-memory` | Memory optimization |
-| Time-based partitioning issues | `altinity-expert-clickhouse-schema` | Partition key review |
-| Slow queries identified | `altinity-expert-clickhouse-reporting` | Query optimization |
-
----
-
-## Settings Reference
-
-| Setting | Default | Notes |
-|---------|---------|-------|
-| `force_primary_key` | 0 | Set 1 to require PRIMARY KEY usage |
-| `force_index_by_date` | 0 | Require partition key filtering |
-| `allow_experimental_analyzer` | 0 | New query analyzer (better index selection) |
-| `use_skip_indexes` | 1 | Enable/disable skip indexes |
-| `use_skip_indexes_if_final` | 0 | Skip indexes with FINAL (experimental) |

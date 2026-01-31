@@ -144,9 +144,20 @@ if [[ -d "$SKILL_DIR/scenarios" ]]; then
         if [[ -f "$scenario" ]]; then
             log_info "Running scenario: $(basename "$scenario")"
             RUNNER_FN="run_script_in_db"
+
+            # Directory-wide opt-in (legacy): ignore all scenario errors for the skill.
             if [[ -f "$SKILL_DIR/.ignore-errors" ]]; then
                 RUNNER_FN="run_script_in_db_ignore_errors"
             fi
+
+            # Per-scenario opt-in: first-line directive.
+            # Example:
+            #   -- IGNORE_ERRORS
+            first_line="$(head -n 1 "$scenario" 2>/dev/null || true)"
+            if [[ "$first_line" =~ ^--[[:space:]]*IGNORE_ERRORS([[:space:]]|$) ]]; then
+                RUNNER_FN="run_script_in_db_ignore_errors"
+            fi
+
             if command -v envsubst &> /dev/null; then
                 TMP_SCENARIO=$(mktemp)
                 envsubst < "$scenario" > "$TMP_SCENARIO"
