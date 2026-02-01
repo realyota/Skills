@@ -101,6 +101,10 @@ credentials:
 serviceAccount:
   create: false
   name: ""
+  # Namespace where the service account is located (optional)
+  # If not set, uses the release namespace
+  # Useful for referencing service accounts from other namespaces
+  namespace: ""
   annotations: {}
 
 # S3 storage configuration for agent execution results
