@@ -101,9 +101,13 @@ credentials:
 serviceAccount:
   create: false
   name: ""
-  # Namespace where the service account is located (optional)
+  # Namespace where the service account should be created (only used when create: true)
   # If not set, uses the release namespace
-  # Useful for referencing service accounts from other namespaces
+  # Note: Pods can only use service accounts from their own namespace
+  # To use a service account from another namespace, you need to:
+  # 1. Create the service account in that namespace (set create: true, namespace: "other-ns")
+  # 2. Create appropriate RoleBinding/ClusterRoleBinding
+  # 3. Deploy the chart in the same namespace as the service account
   namespace: ""
   annotations: {}
 

@@ -61,18 +61,16 @@ Secret name
 
 {{/*
 Create the name of the service account to use
+Note: serviceAccountName in Pod/Job spec only accepts name, not namespace/name format
+The namespace field in serviceAccount configuration is used only when creating
+RoleBindings or for documentation purposes - pods cannot use service accounts
+from other namespaces directly
 */}}
 {{- define "skills-agent.serviceAccountName" -}}
-{{- $name := "" -}}
 {{- if .Values.serviceAccount.create }}
-{{- $name = default (include "skills-agent.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "skills-agent.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
-{{- $name = default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- if .Values.serviceAccount.namespace }}
-{{- printf "%s/%s" .Values.serviceAccount.namespace $name }}
-{{- else }}
-{{- $name }}
+{{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
