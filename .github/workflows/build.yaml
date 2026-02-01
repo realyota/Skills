@@ -57,13 +57,11 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
-          # push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          outputs: type=registry
 
   helm:
     runs-on: ubuntu-latest
