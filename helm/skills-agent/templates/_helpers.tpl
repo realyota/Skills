@@ -63,10 +63,16 @@ Secret name
 Create the name of the service account to use
 */}}
 {{- define "skills-agent.serviceAccountName" -}}
+{{- $name := "" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "skills-agent.fullname" .) .Values.serviceAccount.name }}
+{{- $name = default (include "skills-agent.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- $name = default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- if .Values.serviceAccount.namespace }}
+{{- printf "%s/%s" .Values.serviceAccount.namespace $name }}
+{{- else }}
+{{- $name }}
 {{- end }}
 {{- end }}
 
