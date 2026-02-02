@@ -15,10 +15,23 @@ RUN bash -xec "apt-get update && apt-get install --no-install-recommends -y wget
 
 USER bun
 ENV HOME=/home/bun
-RUN bun install -g @openai/codex@latest
-RUN bun install -g @anthropic-ai/claude-code@latest
-RUN bunx skills add --global --agent claude-code --yes  Altinity/Skills
-RUN bunx skills add --global --agent codex --yes Altinity/Skills
+ENV BUN_INSTALL=/home/bun/.bun
+ENV PATH="/home/bun/.bun/bin:${PATH}"
 
+RUN bun install -g @openai/codex@latest \
+  && bun install -g @anthropic-ai/claude-code@latest \
+  && bunx skills add --global --agent claude-code --yes Altinity/Skills \
+  && bunx skills add --global --agent codex --yes Altinity/Skills
 
-COPY --from=mcp /bin/altinity-mcp /bin/altinity-mcp
+COPY --from=mcp --chown=bun:bun /bin/altinity-mcp /bin/altinity-mcp
+
+RUN mkdir -p /home/bun/.codex \
+  && cat <<'EOF' > /home/bun/.codex/config.toml
+model = "gpt-5.2-codex"
+model_reasoning_effort = "medium"
+web_search = "live"
+
+[mcp_servers.clickhouse]
+command = "/bin/altinity-mcp"
+args = ["--config","/etc/altinity-mcp.yaml"]
+EOF
