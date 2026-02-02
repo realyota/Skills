@@ -12,7 +12,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: altinity/skills
+  IMAGE_NAME: altinity/expert
 
 jobs:
   build:
