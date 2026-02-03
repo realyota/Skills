@@ -7,6 +7,9 @@ This repository contains skills used for ClickHouse DB performance and schema an
 - `automations/`: Batch and focus audit scripts that run full ClickHouse analysis and emit a single report.
 - `releases/`: Built zip packages for distribution (one per skill).
 
+## Auto-build of Releases
+On pushes to `main`, GitHub Actions rebuilds **only the changed skills** under `altinity-expert-clickhouse/skills/` and commits updated zips to `releases/`.
+
 ## Use installed skills
 
 ### Claude Code / Claude Desktop / opencode
