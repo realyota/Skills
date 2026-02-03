@@ -1,6 +1,6 @@
 ---
 name: altinity-expert-clickhouse-connection
-description: Base for any clickhouse analysis by any of altinity-expert-clickhouse skills. Use it before running any other diagnostics.
+description: Should be used when doing clickhouse analysis and diagnostics review before any altinity-expert-clickhouse skill to test clickhouse connection 
 ---
 
 ## Connection mode
