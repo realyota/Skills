@@ -22,7 +22,7 @@ SELECT
     database,
     `table`,
     length(assignments.topic) AS assigned_partitions,
-    num_messages_read / num_commits AS avg_rows_per_commit
+    intDivOrZero(num_messages_read, num_commits) AS avg_rows_per_commit
 FROM clusterAllReplicas('{cluster}', system.kafka_consumers)
 ORDER BY database ASC, `table` ASC, host ASC
 ;
@@ -65,6 +65,25 @@ FROM clusterAllReplicas('{cluster}', system.metric_log)
 WHERE event_time BETWEEN now() - INTERVAL 12 HOUR AND now()
 GROUP BY host, time_bucket
 ORDER BY time_bucket ASC, host ASC
+;
+
+-- Slow Materialized Views on Kafka Tables (24h)
+-- Red flag: avg duration > 30s → MV processing too slow, risks poll interval exceeded
+-- Common cause: multiple JSONExtract calls parsing the same JSON repeatedly
+SELECT
+    hostName() AS host,
+    view_target,
+    status,
+    count() AS executions,
+    round(avg(view_duration_ms) / 1000, 1) AS avg_duration_s,
+    round(max(view_duration_ms) / 1000, 1) AS max_duration_s,
+    round(quantile(0.95)(view_duration_ms) / 1000, 1) AS p95_duration_s,
+    sum(written_rows) AS total_rows_written
+FROM clusterAllReplicas('{cluster}', system.query_views_log)
+WHERE event_time > now() - INTERVAL 24 HOUR
+GROUP BY host, view_target, status
+ORDER BY avg_duration_s DESC
+LIMIT 10
 ;
 
 -- Kafka-related messages in logs
