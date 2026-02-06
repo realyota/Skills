@@ -1,6 +1,12 @@
 name: Auto-build Skill Zips
 
 on:
+  workflow_dispatch:
+    inputs:
+      skills:
+        description: 'Space-separated skill names to rebuild (leave empty to rebuild all)'
+        required: false
+        default: ''
   push:
     branches:
       - main
@@ -15,7 +21,7 @@ on:
 jobs:
   skills-packages:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'github-actions[bot]'
     permissions:
       contents: write
     steps:
@@ -27,16 +33,28 @@ jobs:
       - name: Detect changed skills
         id: changes
         run: |
-          BEFORE="${{ github.event.before }}"
-          SHA="${{ github.sha }}"
-          echo "Comparing $BEFORE..$SHA"
-          CHANGED=$(git diff --name-only "$BEFORE" "$SHA" | grep '^altinity-expert-clickhouse/skills/' || true)
-          if [ -z "$CHANGED" ]; then
-            echo "skills=" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            INPUT_SKILLS="${{ github.event.inputs.skills }}"
+            if [ -n "$INPUT_SKILLS" ]; then
+              echo "Manual run: building specified skills: $INPUT_SKILLS"
+              echo "skills=$INPUT_SKILLS" >> "$GITHUB_OUTPUT"
+            else
+              echo "Manual run: building all skills"
+              SKILLS=$(ls -d altinity-expert-clickhouse/skills/*/SKILL.md 2>/dev/null | awk -F/ '{print $3}' | sort -u | tr '\n' ' ')
+              echo "skills=$SKILLS" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            BEFORE="${{ github.event.before }}"
+            SHA="${{ github.sha }}"
+            echo "Comparing $BEFORE..$SHA"
+            CHANGED=$(git diff --name-only "$BEFORE" "$SHA" | grep '^altinity-expert-clickhouse/skills/' || true)
+            if [ -z "$CHANGED" ]; then
+              echo "skills=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            SKILLS=$(echo "$CHANGED" | awk -F/ '{print $3}' | sort -u | tr '\n' ' ')
+            echo "skills=$SKILLS" >> "$GITHUB_OUTPUT"
           fi
-          SKILLS=$(echo "$CHANGED" | awk -F/ '{print $3}' | sort -u | tr '\n' ' ')
-          echo "skills=$SKILLS" >> "$GITHUB_OUTPUT"
 
       - name: Build changed skill zips
         if: steps.changes.outputs.skills != ''
